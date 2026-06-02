@@ -64,7 +64,10 @@ def train(path: str = DATA_FILE):
 
     df = create_features(df)
     df = create_labels(df)
-    df = df.dropna()
+
+    # Only drop rows where labels (targets) are NaN, not features
+    label_cols = ["aqi_t+24h", "aqi_t+48h", "aqi_t+72h"]
+    df = df.dropna(subset=label_cols)
 
     if len(df) < MIN_ROWS:
         print(f"  Need at least {MIN_ROWS} labeled rows, got {len(df)}. Collect more data first.")
@@ -72,7 +75,7 @@ def train(path: str = DATA_FILE):
 
     # Features (numeric only, no IDs)
     exclude = ["city", "timestamp", "aqi_t+24h", "aqi_t+48h", "aqi_t+72h", "aqi"]
-    feature_cols = [c for c in df.columns if c not in exclude and np.issubdtype(df[c].dtype, np.number)]
+    feature_cols = [c for c in df.columns if c not in exclude and pd.api.types.is_numeric_dtype(df[c])]
     X = df[feature_cols].fillna(df[feature_cols].median())
     y = df[["aqi_t+24h", "aqi_t+48h", "aqi_t+72h"]]
 

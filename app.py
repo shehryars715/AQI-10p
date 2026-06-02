@@ -117,8 +117,8 @@ def predict_heuristic(current_aqi: float, hour: int) -> list:
         predictions.append(max(0, aqi_val))
     return predictions
 
-def predict_model(current_row) -> list:
-    """Use trained model to predict."""
+def predict_model(current_row: dict) -> list:
+    """Use trained model to predict, computing lag features from CSV history."""
     if model_bundle is None:
         return None
 
@@ -126,8 +126,37 @@ def predict_model(current_row) -> list:
     scaler = model_bundle["scaler"]
     features = model_bundle["features"]
 
-    # Build feature vector (fill missing with 0)
-    X = pd.DataFrame([current_row])[features].fillna(0)
+    # Load history to compute lag/rolling features properly
+    history = None
+    if os.path.exists("aqi_data.csv"):
+        history = pd.read_csv("aqi_data.csv", parse_dates=["timestamp"])
+        # Keep only last 72 rows for lag computation
+        history = history.sort_values("timestamp").tail(72)
+
+    # Current row as DataFrame
+    now_df = pd.DataFrame([current_row])
+    if "timestamp" not in now_df.columns:
+        now_df["timestamp"] = pd.Timestamp.now()
+
+    # Combine history + current
+    if history is not None and not history.empty:
+        combined = pd.concat([history, now_df], ignore_index=True)
+    else:
+        combined = now_df
+
+    # Apply same feature engineering as train.py
+    from train import create_features
+    combined = create_features(combined)
+
+    # Get the last row (our current data with proper lags)
+    last_row = combined.iloc[-1:]
+
+    # Build feature vector
+    X = pd.DataFrame(last_row)
+    for col in features:
+        if col not in X.columns:
+            X[col] = 0
+    X = X[features].fillna(0)
     X_scaled = scaler.transform(X)
     preds = model.predict(X_scaled)[0]
     return preds.tolist()
