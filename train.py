@@ -169,6 +169,14 @@ def train():
 
     # ── Save ──
     print(f"\n[4/4] Saving...")
+
+    # Feature importance (from Random Forest — always trained)
+    importance = pd.DataFrame({
+        "feature": feature_cols,
+        "importance": models["RandomForest"].feature_importances_,
+    }).sort_values("importance", ascending=False)
+    importance.to_csv("feature_importance.csv", index=False)
+
     bundle = {
         "model": models[best_name],
         "scaler": scaler,
@@ -180,6 +188,7 @@ def train():
 
     eval_df.to_csv(EVAL_FILE, index=False)
     print(f"       {EVAL_FILE} <- metrics for dashboard")
+    print(f"       feature_importance.csv <- top features")
 
     print(f"\n{'='*60}")
     print(f"  Done. Dashboard will now use: {best_name}")

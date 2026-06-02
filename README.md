@@ -1,10 +1,26 @@
-# 🌍 Pearls AQI Predictor
+# 🌍 Lahore AQI Predictor
 
-**Real-time Air Quality Index forecasting for Pakistani cities using machine learning.**
+**Real-time Air Quality Index forecasting for Lahore using machine learning.**
 
-Air pollution is one of Pakistan's most pressing environmental challenges. Lahore regularly ranks among the most polluted cities in the world, with AQI levels frequently exceeding 300 (Hazardous) during winter smog season. Karachi, Islamabad, and Peshawar also face severe air quality crises driven by vehicle emissions, industrial activity, brick kilns, and crop burning.
+Lahore regularly ranks among the most polluted cities in the world, with AQI levels frequently exceeding 300 (Hazardous) during winter smog season. This project predicts the AQI for the next 3 days using live pollutant data, weather readings, and a trained ML model.
 
-This project predicts the Air Quality Index (AQI) for the next 3 days across 8 major Pakistani cities. It fetches live pollutant and weather data from free APIs, trains a Random Forest model on accumulated historical data, and serves predictions through an interactive Streamlit dashboard.
+---
+
+## Dashboard
+
+<!-- Replace this with your screenshot: Win+Shift+S, then paste here -->
+<!-- ![Dashboard](screenshot.png) -->
+
+![Dashboard](https://via.placeholder.com/800x450/0a0a0a/22cc66?text=Lahore+AQI+Predictor+Dashboard)
+
+The dashboard shows:
+- **Current AQI** with EPA color-coded category (Good → Hazardous)
+- **Pollutant breakdown** — PM2.5, PM10, O₃, NO₂, SO₂, CO
+- **3-day forecast** using the best trained ML model
+- **🚨 Hazard alerts** when AQI exceeds safe levels
+- **📈 Historical trend** — last 7 days from collected data
+- **🔬 Feature importance** — which factors most affect predictions
+- **📊 Model comparison** — RMSE, MAE, R² across models
 
 ---
 
@@ -12,77 +28,61 @@ This project predicts the Air Quality Index (AQI) for the next 3 days across 8 m
 
 ```
 ┌──────────────────┐     ┌──────────────────┐
-│   AQICN API      │     │  OpenWeather API │
-│ (AQI + PM2.5,    │     │ (Temperature,    │
-│  PM10, O₃, etc.) │     │  humidity, wind) │
+│   AQICN API      │     │  Open-Meteo API  │
+│ (Live AQI +      │     │ (Historical AQI  │
+│  PM2.5, PM10)    │     │  + weather, free)│
 └────────┬─────────┘     └────────┬─────────┘
          │                        │
          └──────────┬─────────────┘
                     ▼
           ┌─────────────────┐
-          │   fetcher.py    │  ← Fetches live data, merges into one row per city
+          │   fetcher.py     │  Live data (AQICN + OpenWeather)
+          │   backfill.py    │  Historical data (Open-Meteo, 90 days)
           └────────┬────────┘
                    │
          ┌─────────┴─────────┐
          ▼                   ▼
   ┌─────────────┐    ┌──────────────┐
-  │ aqi_data.csv│    │   app.py     │  ← Streamlit dashboard (live view)
+  │ aqi_data.csv│    │   app.py     │  Streamlit dashboard
   │ (historical │    │              │
-  │  data store)│    │ Heuristic:   │
-  └──────┬──────┘    │ tomorrow ≈   │
-         │           │ today ± 5%   │
+  │  data store)│    │ Before model:│
+  └──────┬──────┘    │ heuristic    │
+         │           │ (trend-based)│
          ▼           └──────────────┘
   ┌─────────────┐
-  │  train.py   │  ← Trains Random Forest on accumulated CSV data
+  │  train.py   │  Trains 3 models, picks best
   └──────┬──────┘
          │
-         ▼
-  ┌─────────────┐
-  │ model.joblib │  ← Saved model + scaler + feature list
-  └──────┬──────┘
-         │
-         ▼
-  ┌─────────────┐
-  │   app.py    │  ← Reloads dashboard, now with ML predictions
-  │ (with model)│
-  └─────────────┘
+         ├── model.joblib         (best model + scaler)
+         ├── evaluation.csv       (RMSE/MAE/R² for dashboard)
+         └── feature_importance.csv (top predictors)
+              │
+              ▼
+       ┌──────────────┐
+       │   app.py     │  Dashboard now uses ML predictions
+       │ (with model) │
+       └──────────────┘
 ```
 
-### Data Pipeline
-1. **Fetch** — `fetcher.py` calls the free AQICN and OpenWeather APIs for 8 Pakistani cities. Each call returns current AQI, pollutant concentrations (PM2.5, PM10, O₃, NO₂, SO₂, CO), and weather readings (temperature, humidity, pressure, wind speed).
-2. **Store** — Data is appended to `aqi_data.csv` with timestamps. Run this hourly to build a training dataset.
-3. **Train** — `train.py` reads the CSV, engineers time features (hour, day of week, month) and lag features (AQI 1h/6h/24h ago, rolling means), then trains a Random Forest regressor that predicts AQI at +24h, +48h, and +72h simultaneously.
-4. **Predict** — `app.py` loads the trained model and serves predictions. Before a model is trained, it falls back to a heuristic (tomorrow ≈ today with diurnal variation).
+### Models Trained
 
-### Model
-- **Algorithm**: Random Forest Regressor (100 trees, max depth 15)
-- **Inputs**: Current AQI, PM2.5, PM10, temperature, humidity, wind speed, hour of day, day of week, month, lag features (AQI at t-1h, t-6h, t-24h), rolling means (6h, 24h)
-- **Outputs**: 3 values — predicted AQI at +24 hours, +48 hours, +72 hours
-- **Evaluation**: RMSE on a chronological 80/20 test split
+| Model | Avg RMSE | Avg MAE | Avg R² |
+|-------|----------|---------|--------|
+| Ridge Regression | 38.0 | 29.8 | -0.08 |
+| Random Forest | 40.9 | 35.0 | -0.25 |
+| Neural Network (MLP) | 44.0 | 37.1 | -0.45 |
 
----
+Ridge wins because AQI prediction is mostly linear (PM2.5 drives it at r=0.95).
 
-## Dashboard
+### Features Used (19 total)
+Hour of day, day of week, month, AQI lags (1h, 6h, 24h), rolling means (6h, 24h), temperature, humidity, wind speed, PM2.5, PM10, O₃, NO₂, SO₂, CO, and more.
 
-The Streamlit dashboard has a sidebar to select any of the 8 tracked cities and shows:
-
-| Section | Content |
-|---------|---------|
-| **Current AQI** | Live AQI number with EPA category (Good → Hazardous) and color coding |
-| **Pollutants** | Bar chart of PM2.5, PM10, O₃, NO₂, SO₂, CO levels |
-| **3-Day Forecast** | Three cards showing predicted AQI for tomorrow, day after, and day 3 |
-| **All Cities** | Comparison table of all 8 cities with color-coded AQI values |
-
-AQI categories follow the US EPA scale:
-
-| AQI Range | Category | Color |
-|-----------|----------|-------|
-| 0–50 | Good | 🟢 Green |
-| 51–100 | Moderate | 🟡 Yellow |
-| 101–150 | Unhealthy for Sensitive Groups | 🟠 Orange |
-| 151–200 | Unhealthy | 🔴 Red |
-| 201–300 | Very Unhealthy | 🟣 Purple |
-| 301+ | Hazardous | 🟤 Maroon |
+### Top 5 Predictors (Feature Importance)
+1. PM2.5 — the strongest driver of AQI
+2. AQI lag 1h — what was the AQI an hour ago
+3. AQI rolling 24h — yesterday's average
+4. AQI lag 24h — yesterday at this hour
+5. Hour of day — diurnal pollution cycle
 
 ---
 
@@ -90,72 +90,78 @@ AQI categories follow the US EPA scale:
 
 ```
 AQI/
-├── app.py             # Streamlit dashboard
-├── train.py           # Model training script
-├── fetcher.py         # API client (AQICN + OpenWeather)
-├── requirements.txt   # Python dependencies
-├── .env.example       # API key template
-├── .gitignore
-├── pyproject.toml
+├── app.py               # Streamlit dashboard
+├── train.py              # Model training (RF, Ridge, Neural Net)
+├── backfill.py           # Historical data from Open-Meteo (free, no key)
+├── fetcher.py            # Live data from AQICN + OpenWeather
+├── eda.py                # Exploratory Data Analysis
+├── requirements.txt      # Dependencies
+├── .env.example          # API key template
+├── .github/workflows/
+│   ├── feature_pipeline.yml   # Hourly data collection
+│   └── training_pipeline.yml  # Daily model retraining
 └── README.md
 ```
-
-That's it. Four source files. No Hopsworks, no Airflow, no Docker, no microservices.
 
 ---
 
 ## Setup
 
-### 1. Get free API keys
+### 1. Get API keys (both free)
 
-| API | Signup Link | Free Tier |
-|-----|-------------|-----------|
-| **AQICN** | https://aqicn.org/data-api/token/ | 1,000 calls/day |
-| **OpenWeather** | https://home.openweathermap.org/api_keys | 1,000 calls/day |
+| API | Link | Limit |
+|-----|------|-------|
+| AQICN | https://aqicn.org/data-api/token/ | 1,000 calls/day |
+| OpenWeather | https://home.openweathermap.org/api_keys | 1,000 calls/day |
 
-Both take under a minute to register.
-
-### 2. Install dependencies
+### 2. Install
 
 ```bash
-# Python 3.12+ required
 pip install -r requirements.txt
+cp .env.example .env
+# Edit .env — paste your AQICN_API_TOKEN and OPENWEATHER_API_KEY
 ```
 
-### 3. Configure API keys
+### 3. Backfill historical data (90 days)
 
 ```bash
-cp .env.example .env
+python backfill.py --days 90
 ```
 
-Open `.env` in any text editor and paste your keys:
+### 4. Train the model
 
+```bash
+python train.py
 ```
-AQICN_API_TOKEN=your_aqicn_token_here
-OPENWEATHER_API_KEY=your_openweather_key_here
-```
+Trains Random Forest, Ridge, and Neural Network — saves the best one.
 
-### 4. Run the dashboard
+### 5. Run EDA (optional)
+
+```bash
+python eda.py
+```
+Prints trends, correlations, diurnal patterns, worst days.
+
+### 6. Launch dashboard
 
 ```bash
 streamlit run app.py
 ```
+Opens at `http://localhost:8501`.
 
-Opens at `http://localhost:8501`. You'll see live AQI data immediately.
+---
 
-### 5. (Optional) Train your own model
+## CI/CD (GitHub Actions)
 
-After accumulating some data (at least 3 days of hourly readings):
+Two workflows automate the project on every push to `main`:
 
-```bash
-# Save a snapshot of current data
-python -c "from fetcher import fetch_all, save_to_csv; save_to_csv(fetch_all())"
+| Workflow | Schedule | What it does |
+|----------|----------|-------------|
+| **Feature Pipeline** | Every hour | Fetches live AQI + weather, appends to CSV |
+| **Training Pipeline** | Daily at 6:23 AM | Backfills 90 days, trains all models, uploads `model.joblib` artifact |
 
-# Train the model
-python train.py
-```
-
-The dashboard automatically detects `model.joblib` and switches from heuristic to ML predictions.
+**Required GitHub Secrets**: `AQICN_API_TOKEN`, `OPENWEATHER_API_KEY`
+**Training pipeline**: works without secrets (uses free Open-Meteo API).
 
 ---
 
@@ -163,9 +169,10 @@ The dashboard automatically detects `model.joblib` and switches from heuristic t
 
 | Component | Technology |
 |-----------|------------|
-| Data Fetching | AQICN API, OpenWeather API |
-| Data Processing | Pandas, NumPy |
-| Machine Learning | Scikit-learn (Random Forest) |
+| Live AQI | AQICN API |
+| Weather + Historical | OpenWeather API, Open-Meteo API |
+| Data | Pandas, NumPy |
+| Models | Scikit-learn (Random Forest, Ridge, MLP Neural Net) |
 | Dashboard | Streamlit, Plotly |
+| CI/CD | GitHub Actions |
 | Config | python-dotenv |
-| Model Serialization | joblib |

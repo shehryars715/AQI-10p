@@ -182,18 +182,59 @@ for i, (day, pred) in enumerate(zip(days, predictions)):
             unsafe_allow_html=True,
         )
 
-# ── Multi-city overview ──
-st.subheader("🏙️ All Cities Overview")
-overview = data[["city", "aqi", "pm25", "temperature", "humidity"]].copy()
-overview["Category"] = overview["aqi"].apply(aqi_category)
-st.dataframe(
-    overview,
-    use_container_width=True,
-    hide_index=True,
-)
+# ── Hazardous Alert Banner ──
+if current_aqi > 150:
+    st.error(f"🚨 **HAZARDOUS AQI ALERT**: Current AQI is {current_aqi:.0f} ({aqi_category(current_aqi)}). "
+             f"Avoid outdoor activities. Close windows. Wear N95 masks if going outside.")
+elif current_aqi > 100:
+    st.warning(f"⚠️ **AIR QUALITY WARNING**: Current AQI is {current_aqi:.0f} ({aqi_category(current_aqi)}). "
+               f"Sensitive groups should limit outdoor exposure.")
+
+# Check forecast for hazardous days
+hazardous_days = [(day, pred) for day, pred in zip(days, predictions) if pred > 150]
+if hazardous_days:
+    for day, pred in hazardous_days:
+        st.warning(f"📅 **{day.strftime('%b %d')}**: Predicted AQI {pred:.0f} — {aqi_category(pred)}")
+
+# ── Analytics Sections (collapsible) ──
+
+# Historical trend
+with st.expander("📈 Historical AQI Trend (from CSV)", expanded=False):
+    if os.path.exists("aqi_data.csv"):
+        hist = pd.read_csv("aqi_data.csv", parse_dates=["timestamp"])
+        hist = hist[hist["city"] == city].sort_values("timestamp").tail(168)  # last 7 days
+        if not hist.empty:
+            st.line_chart(hist.set_index("timestamp")["aqi"], height=300)
+        else:
+            st.caption("No historical data for this city yet.")
+    else:
+        st.caption("No aqi_data.csv found. Run backfill.py or the feature pipeline first.")
+
+# Feature importance
+with st.expander("🔬 Feature Importance", expanded=False):
+    if os.path.exists("feature_importance.csv"):
+        fi = pd.read_csv("feature_importance.csv").head(10)
+        st.bar_chart(fi.set_index("feature")["importance"], horizontal=True)
+        st.caption("Top 10 features by Random Forest importance (mean decrease in impurity)")
+    elif model_bundle and hasattr(model_bundle["model"], "feature_importances_"):
+        fi = pd.DataFrame({
+            "feature": model_bundle["features"],
+            "importance": model_bundle["model"].feature_importances_,
+        }).sort_values("importance", ascending=False).head(10)
+        st.bar_chart(fi.set_index("feature")["importance"], horizontal=True)
+    else:
+        st.caption("Run `python train.py` to generate feature importance.")
+
+# Model comparison
+with st.expander("📊 Model Comparison (RMSE / MAE / R²)", expanded=False):
+    if os.path.exists("evaluation.csv"):
+        ev = pd.read_csv("evaluation.csv")
+        st.dataframe(ev, use_container_width=True, hide_index=True)
+    else:
+        st.caption("Run `python train.py` to generate model metrics.")
 
 # ── Footer ──
 st.divider()
 st.caption(f"Data fetched at {datetime.now().strftime('%H:%M')} • "
-           f"Model: {'Trained RF' if model_bundle else 'Trend-based'} • "
+           f"Model: {model_bundle['model_name'] if model_bundle else 'Trend-based'} • "
            f"Refresh: auto every 5 min")
