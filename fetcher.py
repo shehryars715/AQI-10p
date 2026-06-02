@@ -10,7 +10,7 @@ load_dotenv()
 AQICN_TOKEN = os.getenv("AQICN_API_TOKEN")
 OWM_KEY = os.getenv("OPENWEATHER_API_KEY")
 
-CITIES = ["Delhi", "Mumbai", "Bangalore", "Chennai", "Kolkata"]
+CITIES = ["Lahore", "Karachi", "Islamabad", "Peshawar", "Faisalabad", "Rawalpindi", "Multan", "Quetta"]
 
 
 def fetch_aqi(city: str) -> dict:
@@ -46,7 +46,7 @@ def fetch_weather(city: str) -> dict:
     """Get current weather for a city from OpenWeather."""
     resp = requests.get(
         "https://api.openweathermap.org/data/2.5/weather",
-        params={"q": f"{city},IN", "appid": OWM_KEY, "units": "metric"},
+        params={"q": f"{city},PK", "appid": OWM_KEY, "units": "metric"},
         timeout=10,
     )
     resp.raise_for_status()
