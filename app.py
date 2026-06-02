@@ -158,10 +158,7 @@ st.subheader("🏙️ All Cities Overview")
 overview = data[["city", "aqi", "pm25", "temperature", "humidity"]].copy()
 overview["Category"] = overview["aqi"].apply(aqi_category)
 st.dataframe(
-    overview.style.applymap(
-        lambda v: f"background-color: {aqi_color(v)}" if isinstance(v, (int, float)) else "",
-        subset=["aqi"],
-    ),
+    overview,
     use_container_width=True,
     hide_index=True,
 )

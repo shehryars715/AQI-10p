@@ -10,7 +10,7 @@ load_dotenv()
 AQICN_TOKEN = os.getenv("AQICN_API_TOKEN")
 OWM_KEY = os.getenv("OPENWEATHER_API_KEY")
 
-CITIES = ["Lahore", "Karachi", "Islamabad", "Peshawar", "Faisalabad", "Rawalpindi", "Multan", "Quetta"]
+CITIES = ["Lahore"]
 
 
 def fetch_aqi(city: str) -> dict:
