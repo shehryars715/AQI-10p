@@ -1,29 +1,9 @@
-# Python-generated files
-__pycache__/
-*.py[oc]
-build/
-dist/
-wheels/
-*.egg-info
-
-# Virtual environments
-.venv
-
-# Environment secrets
 .env
-
-# Model artifacts
+.venv
+__pycache__/
+*.pyc
 *.joblib
-*.keras
-*.h5
-*.pkl
-
-# Streamlit
+aqi_data.csv
 .streamlit/
-
-# Jupyter
 .ipynb_checkpoints/
-
-# IDE
-.vscode/
-.idea/
+*.egg-info/

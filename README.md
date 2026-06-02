@@ -1,59 +1,32 @@
 # Pearls AQI Predictor
 
-End-to-end machine learning pipeline for Air Quality Index (AQI) forecasting in Indian cities.
+## Setup (2 minutes)
 
-## Architecture
+### 1. Get free API keys
+- **AQICN**: Go to https://aqicn.org/data-api/token/ — click "Get token" (free, 1000 calls/day)
+- **OpenWeather**: Go to https://home.openweathermap.org/api_keys — sign up, get free key
 
-- **Feature Pipeline** (hourly): Fetches AQICN + OpenWeather data, engineers features, stores in Hopsworks Feature Store
-- **Training Pipeline** (daily): Loads features from Hopsworks, trains RF/Ridge/LSTM models, registers best in Model Registry
-- **API** (FastAPI): Serves predictions from the production model
-- **Dashboard** (Streamlit): Interactive 4-page UI with forecasts, model comparison, SHAP, and alerts
-- **CI/CD** (GitHub Actions): Automated hourly feature pipeline and daily training
-
-## Setup
-
-### 1. Clone and install
-
+### 2. Install & configure
 ```bash
-git clone <repo-url>
-cd AQI
-python -m venv .venv
-source .venv/bin/activate  # or .venv\Scripts\activate on Windows
-pip install -e ".[dev]"
-```
-
-### 2. Configure API keys
-
-```bash
+pip install -r requirements.txt
 cp .env.example .env
-# Edit .env with your actual API keys
+# Edit .env — paste your two API keys
 ```
 
-### 3. Run locally
-
+### 3. Run
 ```bash
-# Feature pipeline
-python src/feature_pipeline/runner.py
-
-# Training pipeline
-python src/training_pipeline/runner.py
-
-# API server
-uvicorn src.api.main:app --reload
-
-# Dashboard (separate terminal)
-streamlit run src/dashboard/app.py
+streamlit run app.py
 ```
 
-## Environment Variables
+That's it. The dashboard will open in your browser showing current AQI and 3-day predictions.
 
-| Variable | Source |
-|----------|--------|
-| HOPWORKS_API_KEY | app.hopsworks.ai |
-| AQICN_API_TOKEN | aqicn.org/data-api/token |
-| OPENWEATHER_API_KEY | home.openweathermap.org/api_keys |
-| CITIES | JSON array, e.g. ["Delhi","Mumbai"] |
+### 4. Optional: train your own model
+```bash
+python train.py    # trains on collected data
+```
+After training, the dashboard automatically uses your model instead of heuristics.
 
-## Tech Stack
-
-Python, Scikit-learn, TensorFlow, Hopsworks, GitHub Actions, Streamlit, FastAPI, SHAP, Plotly
+## How it works
+1. **app.py** — streamlit dashboard, fetches live AQI from AQICN, predicts next 3 days
+2. **train.py** — trains a RandomForest on hourly AQI data, saves to `model.joblib`
+3. **fetcher.py** — API helper that gets AQI + weather data
