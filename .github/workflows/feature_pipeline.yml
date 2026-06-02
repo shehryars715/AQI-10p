@@ -1,0 +1,49 @@
+name: Feature Pipeline
+
+on:
+  schedule:
+    - cron: '7 * * * *'     # every hour at :07
+  workflow_dispatch:         # manual trigger
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install pandas requests python-dotenv
+
+      - name: Restore CSV from cache
+        uses: actions/cache@v4
+        id: cache-csv
+        with:
+          path: aqi_data.csv
+          key: aqi-data-${{ github.run_number }}
+          restore-keys: aqi-data-
+
+      - name: Fetch live data
+        run: python -c "
+          from fetcher import fetch_all, save_to_csv
+          import pandas as pd, os
+          df = fetch_all()
+          if not df.empty:
+              save_to_csv(df)
+              print(f'Saved {len(df)} rows')
+          else:
+              print('No data fetched')
+          "
+        env:
+          AQICN_API_TOKEN: ${{ secrets.AQICN_API_TOKEN }}
+          OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
+
+      - name: Save CSV to cache
+        uses: actions/cache@v4
+        with:
+          path: aqi_data.csv
+          key: aqi-data-${{ github.run_number }}
