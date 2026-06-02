@@ -22,9 +22,9 @@ from fetcher import fetch_all, fetch_aqi, fetch_weather, CITIES
 load_dotenv()
 
 # ── Page setup ──
-st.set_page_config(page_title="AQI Predictor", page_icon="🌍", layout="wide")
-st.title("🌍 Pearls AQI Predictor")
-st.caption("Live AQI + 3-day forecast for Indian cities")
+st.set_page_config(page_title="Lahore AQI Predictor", page_icon="🌍", layout="wide")
+st.title("🌍 Lahore AQI Predictor")
+st.caption("Live AQI + 3-day forecast for Lahore")
 
 # ── Load model ──
 MODEL_FILE = "model.joblib"
