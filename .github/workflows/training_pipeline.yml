@@ -3,12 +3,11 @@ name: Training Pipeline
 on:
   schedule:
     - cron: '23 6 * * *'    # daily at 6:23 AM UTC
-  workflow_dispatch:
+  workflow_dispatch:         # manual trigger button
 
 jobs:
   train:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
@@ -19,16 +18,10 @@ jobs:
       - name: Install dependencies
         run: pip install pandas numpy scikit-learn requests joblib
 
-      - name: Restore CSV from feature pipeline cache
-        uses: actions/cache@v4
-        with:
-          path: aqi_data.csv
-          key: aqi-data-
-
-      - name: Backfill historical data
+      - name: Backfill historical data (90 days)
         run: python backfill.py --days 90
 
-      - name: Train models
+      - name: Train all models
         run: python train.py
 
       - name: Upload trained model

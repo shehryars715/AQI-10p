@@ -97,3 +97,12 @@ def save_to_csv(df: pd.DataFrame, path: str = "aqi_data.csv") -> None:
         df.to_csv(path, index=False)
 
     print(f"Saved {len(df)} rows to {path}")
+
+
+if __name__ == "__main__":
+    df = fetch_all()
+    if not df.empty:
+        print(df[["city", "aqi", "pm25", "temperature"]].to_string(index=False))
+        save_to_csv(df)
+    else:
+        print("No data fetched — check your API keys in .env or GitHub Secrets")
