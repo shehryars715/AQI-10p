@@ -1,0 +1,41 @@
+name: Training Pipeline
+
+on:
+  schedule:
+    # Run daily at 6:23 AM UTC (off-minute to avoid stampede)
+    - cron: '23 6 * * *'
+  workflow_dispatch:
+  workflow_run:
+    workflows: ['Feature Pipeline']
+    types:
+      - completed
+    branches: [main]
+
+env:
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  run-training-pipeline:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run training pipeline
+        run: python src/training_pipeline/runner.py
+        env:
+          HOPWORKS_API_KEY: ${{ secrets.HOPWORKS_API_KEY }}
+          HOPWORKS_PROJECT_NAME: ${{ secrets.HOPWORKS_PROJECT_NAME }}
+          CITIES: ${{ vars.CITIES }}
