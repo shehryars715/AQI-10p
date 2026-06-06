@@ -2,6 +2,8 @@
 
 **Real-time Air Quality Index forecasting for Lahore using machine learning.**
 
+**Live app:** https://aqi-10p.streamlit.app/
+
 Lahore regularly ranks among the most polluted cities in the world, with AQI levels frequently exceeding 300 (Hazardous) during winter smog season. This project predicts the AQI for the next 3 days using live pollutant data, weather readings, and a trained ML model.
 
 ---
