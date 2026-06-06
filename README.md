@@ -10,10 +10,7 @@ Lahore regularly ranks among the most polluted cities in the world, with AQI lev
 
 ## Dashboard
 
-<!-- Replace this with your screenshot: Win+Shift+S, then paste here -->
-<!-- ![Dashboard](screenshot.png) -->
-
-![Dashboard](https://via.placeholder.com/800x450/0a0a0a/22cc66?text=Lahore+AQI+Predictor+Dashboard)
+![Lahore AQI Predictor Dashboard](assets/dashboard.png)
 
 The dashboard shows:
 - **Current AQI** with EPA color-coded category (Good → Hazardous)
