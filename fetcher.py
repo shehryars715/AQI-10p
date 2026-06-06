@@ -7,8 +7,22 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-AQICN_TOKEN = os.getenv("AQICN_API_TOKEN")
-OWM_KEY = os.getenv("OPENWEATHER_API_KEY")
+def get_secret(name: str) -> str | None:
+    """Read secrets from local .env, GitHub Actions env, or Streamlit Cloud."""
+    value = os.getenv(name)
+    if value:
+        return value
+
+    try:
+        import streamlit as st
+
+        return st.secrets.get(name)
+    except Exception:
+        return None
+
+
+AQICN_TOKEN = get_secret("AQICN_API_TOKEN")
+OWM_KEY = get_secret("OPENWEATHER_API_KEY")
 
 CITIES = ["Lahore"]
 
@@ -54,7 +68,7 @@ def fetch_weather(city: str) -> dict:
 
     return {
         "city": city,
-        "timestamp": pd.Timestamp.utcfromtimestamp(data["dt"]),
+        "timestamp": pd.Timestamp.fromtimestamp(data["dt"], tz="UTC"),
         "temperature": data["main"]["temp"],
         "humidity": data["main"]["humidity"],
         "pressure": data["main"]["pressure"],

@@ -105,6 +105,46 @@ AQI/
 
 ---
 
+## Deployment on Streamlit Community Cloud
+
+The app is ready to deploy from GitHub. Streamlit Community Cloud runs the app from the repository root, installs `requirements.txt`, and launches `app.py`.
+
+### Deploy settings
+
+Use these values when creating the app:
+
+| Field | Value |
+|-------|-------|
+| Repository | `shehryars715/AQI-10p` |
+| Branch | `main` |
+| Main file path | `app.py` |
+| Python version | `3.12` |
+
+### Streamlit secrets
+
+In Streamlit Cloud, open **Advanced settings** and paste:
+
+```toml
+AQICN_API_TOKEN = "paste_your_aqicn_token_here"
+OPENWEATHER_API_KEY = "paste_your_openweather_key_here"
+```
+
+Do not commit real API keys. Locally, the app reads `.env`; on Streamlit Cloud, it reads the secrets above.
+
+### Verify deployment
+
+After deployment, the app should show:
+
+- Current AQI for Lahore
+- PM2.5, PM10, temperature, humidity, and weather metrics
+- 3-day forecast using `model.joblib`
+- Historical trend from `aqi_data.csv`
+- Feature importance and model comparison sections
+
+If deployment fails, open the Streamlit Cloud app logs and check the failing line. The most common problems are missing secrets or a typo in the main file path.
+
+---
+
 ## Setup
 
 ### 1. Get API keys (both free)
